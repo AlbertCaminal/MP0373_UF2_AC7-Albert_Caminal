@@ -3,6 +3,8 @@ const searchInput = document.getElementById('search');
 const apiUrl = 'https://pokeapi.co/api/v2/pokemon?limit=151';
 let allPokemon = [];
 
+const activeFilters = new Set();
+
 async function fetchPokemonList() {
   try {
     const response = await fetch(apiUrl);
@@ -54,9 +56,55 @@ function capitalize(str) {
 }
 
 searchInput.addEventListener('keyup', () => {
+  clearFilterButtons();
   const searchTerm = searchInput.value.toLowerCase();
-  const filteredPokemon = allPokemon.filter(pokemon => pokemon.name.toLowerCase().includes(searchTerm));
+  const filteredPokemon = allPokemon.filter(pokemon => 
+    pokemon.name.toLowerCase().includes(searchTerm)
+  );
   displayPokemon(filteredPokemon);
 });
+
+const filterButtons = document.querySelectorAll('.filter-btn');
+filterButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    const type = button.getAttribute('data-type');
+
+    if (type === 'all') {
+      activeFilters.clear();
+      clearFilterButtons();
+      button.classList.add('active');
+      displayPokemon(allPokemon);
+    } else {
+      document.querySelector('button[data-type="all"]').classList.remove('active');
+      button.classList.toggle('active');
+      if (button.classList.contains('active')) {
+        activeFilters.add(type);
+      } else {
+        activeFilters.delete(type);
+      }
+      filterPokemonByTypes();
+    }
+  });
+});
+
+function filterPokemonByTypes() {
+  let filtered = allPokemon;
+  if (activeFilters.size > 0) {
+    filtered = filtered.filter(pokemon => {
+      return [...activeFilters].every(filterType =>
+        pokemon.types.some(t => t.type.name === filterType)
+      );
+    });
+  }
+  displayPokemon(filtered);
+}
+
+function clearFilterButtons() {
+  filterButtons.forEach(button => {
+    if (button.getAttribute('data-type') !== 'all') {
+      button.classList.remove('active');
+    }
+  });
+}
 
 fetchPokemonList();
